@@ -38,11 +38,24 @@ npx nx lint
 npx nx format
 ```
 
+### Shared Library Development
+```bash
+# Build shared library
+npx nx build shared-lib
+
+# Test shared library
+npx nx test shared-lib
+
+# Lint shared library
+npx nx lint shared-lib
+```
+
 ## Architecture Overview
 
 ### Monorepo Structure (Nx Workspace)
 - **Main API**: `/apps/apis/` - Fastify-based REST API
 - **E2E Tests**: `/apps/apis-e2e/` - End-to-end testing with Jest + axios
+- **Shared Libraries**: `/packages/shared-lib/` - Shared utilities and types
 - **Documentation**: `/docs/api-reference.md` - Comprehensive API specifications
 
 ### Tech Stack
@@ -57,10 +70,15 @@ npx nx format
 ### Key Directories
 - **`/apps/apis/src/app/plugins/`** - Fastify plugins (sensible.ts, database.ts)
 - **`/apps/apis/src/app/routes/`** - API route handlers (autoloaded by Fastify)
-- **`/apps/apis/src/lib/`** - Core utilities (database, supabase, auth)
 - **`/apps/apis/src/services/`** - Business logic services
 - **`/apps/apis/src/generated/prisma/`** - Generated Prisma client
 - **`/apps/apis/src/main.ts`** - Application entry point
+- **`/packages/shared-lib/src/lib/`** - Shared utilities (@beeat/shared-lib)
+  - `auth.ts` - Authentication functions and middleware
+  - `database.ts` - Prisma database client setup
+  - `logger.ts` - Pino logging configuration
+  - `schemas.ts` - Zod validation schemas
+  - `supabase.ts` - Supabase client configuration
 - **`/prisma/`** - Database schema and migrations
 
 ### Current Implementation State
@@ -73,6 +91,7 @@ npx nx format
 - ✅ Supabase authentication integration
 - ✅ Database service layer (courses, users, cart)
 - ✅ Authentication middleware
+- ✅ Shared library with core utilities (@beeat/shared-lib)
 - ❌ API endpoints implementation (in progress)
 - ❌ Database migrations not run
 

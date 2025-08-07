@@ -9,38 +9,35 @@ datasource db {
 }
 
 model User {
-  id          String    @id @default(uuid())
-  email       String    @unique
+  id          String             @id @default(uuid())
+  email       String             @unique
   fullName    String
   phone       String?
   bio         String?
   avatar      String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
   lastLoginAt DateTime?
-
-  preferences UserPreferences?
-  enrollments CourseEnrollment[]
   cartItems   CartItem[]
-  payments    Payment[]
+  enrollments CourseEnrollment[]
   progress    LessonProgress[]
-  analytics   UserAnalytics[]
+  payments    Payment[]
+  analytics   UserAnalytics?
+  preferences UserPreferences?
 
   @@map("users")
 }
 
 model UserPreferences {
-  id       String @id @default(uuid())
-  userId   String @unique
-  language String @default("en")
-  timezone String @default("UTC")
-
+  id                        String  @id @default(uuid())
+  userId                    String  @unique
+  language                  String  @default("en")
+  timezone                  String  @default("UTC")
   emailNotifications        Boolean @default(true)
   courseUpdateNotifications Boolean @default(true)
   promotionNotifications    Boolean @default(false)
   weeklyDigestNotifications Boolean @default(true)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_preferences")
 }
@@ -53,8 +50,7 @@ model Instructor {
   rating        Float    @default(0)
   studentsCount Int      @default(0)
   createdAt     DateTime @default(now())
-
-  courses Course[]
+  courses       Course[]
 
   @@map("instructors")
 }
@@ -64,69 +60,64 @@ model Category {
   name      String   @unique
   slug      String   @unique
   createdAt DateTime @default(now())
-
-  courses Course[]
+  courses   Course[]
 
   @@map("categories")
 }
 
 model Course {
-  id              String      @id @default(uuid())
+  id              String              @id @default(uuid())
   title           String
   description     String
   longDescription String
   thumbnail       String
   price           Float
   originalPrice   Float?
-  rating          Float       @default(0)
-  studentsCount   Int         @default(0)
+  rating          Float               @default(0)
+  studentsCount   Int                 @default(0)
   duration        String
   level           CourseLevel
-  language        String      @default("English")
-  lastUpdated     DateTime    @default(now())
-  totalLessons    Int         @default(0)
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
-
-  instructorId String
-  categoryId   String
-
-  instructor   Instructor          @relation(fields: [instructorId], references: [id])
-  category     Category            @relation(fields: [categoryId], references: [id])
-  sections     CourseSection[]
-  skills       CourseSkill[]
-  requirements CourseRequirement[]
-  enrollments  CourseEnrollment[]
-  cartItems    CartItem[]
-  analytics    CourseAnalytics[]
+  language        String              @default("English")
+  lastUpdated     DateTime            @default(now())
+  totalLessons    Int                 @default(0)
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+  instructorId    String
+  categoryId      String
+  cartItems       CartItem[]
+  analytics       CourseAnalytics[]
+  enrollments     CourseEnrollment[]
+  requirements    CourseRequirement[]
+  sections        CourseSection[]
+  skills          CourseSkill[]
+  category        Category            @relation(fields: [categoryId], references: [id])
+  instructor      Instructor          @relation(fields: [instructorId], references: [id])
 
   @@map("courses")
 }
 
 model CourseSection {
-  id       String @id @default(uuid())
+  id       String   @id @default(uuid())
   title    String
   order    Int
   courseId String
-
-  course  Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  lessons Lesson[]
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  lessons  Lesson[]
 
   @@map("course_sections")
 }
 
 model Lesson {
-  id        String  @id @default(uuid())
+  id        String           @id @default(uuid())
   title     String
   duration  String
-  isPreview Boolean @default(false)
+  isPreview Boolean          @default(false)
   videoUrl  String?
   order     Int
   sectionId String
-
-  section   CourseSection    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
-  resources LessonResource[]
   progress  LessonProgress[]
+  resources LessonResource[]
+  section   CourseSection    @relation(fields: [sectionId], references: [id], onDelete: Cascade)
 
   @@map("lessons")
 }
@@ -137,8 +128,7 @@ model LessonResource {
   url      String
   type     ResourceType
   lessonId String
-
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson   Lesson       @relation(fields: [lessonId], references: [id], onDelete: Cascade)
 
   @@map("lesson_resources")
 }
@@ -147,8 +137,7 @@ model CourseSkill {
   id       String @id @default(uuid())
   skill    String
   courseId String
-
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@map("course_skills")
 }
@@ -157,8 +146,7 @@ model CourseRequirement {
   id          String @id @default(uuid())
   requirement String
   courseId    String
-
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course      Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@map("course_requirements")
 }
@@ -171,9 +159,8 @@ model CourseEnrollment {
   completedAt       DateTime?
   certificateEarned Boolean   @default(false)
   certificateUrl    String?
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course            Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
   @@map("course_enrollments")
@@ -185,12 +172,11 @@ model LessonProgress {
   lessonId        String
   completed       Boolean   @default(false)
   completedAt     DateTime?
-  timeSpent       Int       @default(0) // in seconds
-  watchedDuration Int       @default(0) // in seconds
+  timeSpent       Int       @default(0)
+  watchedDuration Int       @default(0)
   lastAccessedAt  DateTime  @default(now())
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  lesson          Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, lessonId])
   @@map("lesson_progress")
@@ -202,54 +188,50 @@ model CartItem {
   courseId String
   quantity Int      @default(1)
   addedAt  DateTime @default(now())
-
-  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course   Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, courseId])
   @@map("cart_items")
 }
 
 model Payment {
-  id                    String        @id @default(uuid())
+  id                    String             @id @default(uuid())
   userId                String
   amount                Float
-  currency              String        @default("VND")
+  currency              String             @default("VND")
   status                PaymentStatus
   paymentMethod         String
   stripePaymentIntentId String?
-  createdAt             DateTime      @default(now())
+  createdAt             DateTime           @default(now())
   paidAt                DateTime?
-
-  user           User               @relation(fields: [userId], references: [id])
-  billingAddress BillingAddress?
-  orderItems     PaymentOrderItem[]
+  billingAddress        BillingAddress?
+  orderItems            PaymentOrderItem[]
+  user                  User               @relation(fields: [userId], references: [id])
 
   @@map("payments")
 }
 
 model BillingAddress {
-  id        String @id @default(uuid())
-  paymentId String @unique
+  id        String  @id @default(uuid())
+  paymentId String  @unique
   fullName  String
   email     String
   address   String
   city      String
   zipCode   String
-
-  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@map("billing_addresses")
 }
 
 model PaymentOrderItem {
-  id        String @id @default(uuid())
+  id        String  @id @default(uuid())
   paymentId String
   courseId  String
   price     Float
-  quantity  Int    @default(1)
-
-  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  quantity  Int     @default(1)
+  payment   Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
 
   @@map("payment_order_items")
 }
@@ -259,31 +241,28 @@ model CourseAnalytics {
   courseId  String
   userId    String?
   viewedAt  DateTime @default(now())
-  source    String? // "search"|"category"|"recommendation"|"direct"
+  source    String?
   referrer  String?
   ipAddress String?
-
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  course    Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@map("course_analytics")
 }
 
 model UserAnalytics {
   id                 String   @id @default(uuid())
-  userId             String
-  totalTimeSpent     Int      @default(0) // in seconds
+  userId             String   @unique
+  totalTimeSpent     Int      @default(0)
   coursesCompleted   Int      @default(0)
   lessonsCompleted   Int      @default(0)
   certificatesEarned Int      @default(0)
-  currentStreak      Int      @default(0) // in days
-  longestStreak      Int      @default(0) // in days
+  currentStreak      Int      @default(0)
+  longestStreak      Int      @default(0)
   dailyGoalMinutes   Int      @default(30)
   weeklyGoalMinutes  Int      @default(210)
   lastUpdated        DateTime @default(now())
+  user               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([userId])
   @@map("user_analytics")
 }
 

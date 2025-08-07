@@ -1,38 +1,38 @@
-import { FastifyPluginAsync } from 'fastify'
-import { CourseService } from '../../../services/course.service'
-import { prisma } from '../../../lib/database'
-import { CourseLevel } from '../../../generated/prisma'
+import { FastifyPluginAsync } from 'fastify';
+import { CourseService } from '../../../services/course.service';
+import { prisma } from '@beeat/shared-lib';
+import { CourseLevel } from '../../../generated/prisma';
 
-const courseService = new CourseService()
+const courseService = new CourseService();
 
 const search: FastifyPluginAsync = async (fastify): Promise<void> => {
   // GET /search/courses - Search courses
   fastify.get<{
     Querystring: {
-      q: string
-      category?: string
-      level?: CourseLevel
-      priceMin?: string
-      priceMax?: string
-      rating?: string
-      duration?: 'short' | 'medium' | 'long'
-      language?: string
-      sortBy?: 'relevance' | 'rating' | 'price' | 'newest' | 'popular'
-      page?: string
-      limit?: string
-    }
+      q: string;
+      category?: string;
+      level?: CourseLevel;
+      priceMin?: string;
+      priceMax?: string;
+      rating?: string;
+      duration?: 'short' | 'medium' | 'long';
+      language?: string;
+      sortBy?: 'relevance' | 'rating' | 'price' | 'newest' | 'popular';
+      page?: string;
+      limit?: string;
+    };
   }>('/courses', async (request, reply) => {
     try {
-      const query = request.query
+      const query = request.query;
 
       if (!query.q) {
         return reply.code(400).send({
           success: false,
           error: {
             code: 'VALIDATION_001',
-            message: 'Search query is required'
-          }
-        })
+            message: 'Search query is required',
+          },
+        });
       }
 
       const searchParams = {
@@ -46,156 +46,156 @@ const search: FastifyPluginAsync = async (fastify): Promise<void> => {
         rating: query.rating ? parseFloat(query.rating) : undefined,
         duration: query.duration,
         language: query.language,
-        sortBy: query.sortBy || 'relevance'
-      }
+        sortBy: query.sortBy || 'relevance',
+      };
 
-      const result = await courseService.searchCourses(searchParams)
+      const result = await courseService.searchCourses(searchParams);
 
       reply.send({
         success: true,
-        data: result
-      })
+        data: result,
+      });
     } catch (error) {
       reply.code(500).send({
         success: false,
         error: {
           code: 'SYSTEM_001',
-          message: 'Internal server error'
-        }
-      })
+          message: 'Internal server error',
+        },
+      });
     }
-  })
+  });
 
   // GET /search/suggestions - Get search suggestions
   fastify.get<{
     Querystring: {
-      q: string
-      limit?: string
-    }
+      q: string;
+      limit?: string;
+    };
   }>('/suggestions', async (request, reply) => {
     try {
-      const { q, limit = '5' } = request.query
+      const { q, limit = '5' } = request.query;
 
       if (!q || q.length < 2) {
         return reply.send({
           success: true,
           data: {
-            suggestions: []
-          }
-        })
+            suggestions: [],
+          },
+        });
       }
 
-      const limitNum = Math.min(parseInt(limit), 10)
+      const limitNum = Math.min(parseInt(limit), 10);
 
       // Get course title suggestions
       const courseSuggestions = await prisma.course.findMany({
         where: {
           title: {
             contains: q,
-            mode: 'insensitive'
-          }
+            mode: 'insensitive',
+          },
         },
         select: {
-          title: true
+          title: true,
         },
         take: limitNum,
-        distinct: ['title']
-      })
+        distinct: ['title'],
+      });
 
       // Get instructor name suggestions
       const instructorSuggestions = await prisma.instructor.findMany({
         where: {
           name: {
             contains: q,
-            mode: 'insensitive'
-          }
+            mode: 'insensitive',
+          },
         },
         select: {
           name: true,
           _count: {
             select: {
-              courses: true
-            }
-          }
+              courses: true,
+            },
+          },
         },
         take: limitNum,
-        distinct: ['name']
-      })
+        distinct: ['name'],
+      });
 
       // Get category suggestions
       const categorySuggestions = await prisma.category.findMany({
         where: {
           name: {
             contains: q,
-            mode: 'insensitive'
-          }
+            mode: 'insensitive',
+          },
         },
         select: {
           name: true,
           _count: {
             select: {
-              courses: true
-            }
-          }
+              courses: true,
+            },
+          },
         },
         take: limitNum,
-        distinct: ['name']
-      })
+        distinct: ['name'],
+      });
 
       // Get skill suggestions
       const skillSuggestions = await prisma.courseSkill.findMany({
         where: {
           skill: {
             contains: q,
-            mode: 'insensitive'
-          }
+            mode: 'insensitive',
+          },
         },
         select: {
-          skill: true
+          skill: true,
         },
         take: limitNum,
-        distinct: ['skill']
-      })
+        distinct: ['skill'],
+      });
 
       const suggestions = [
-        ...courseSuggestions.map(c => ({
+        ...courseSuggestions.map((c: { title: string }) => ({
           text: c.title,
           type: 'course',
-          count: 1
+          count: 1,
         })),
-        ...instructorSuggestions.map(i => ({
+        ...instructorSuggestions.map((i: { name: string; _count: { courses: number } }) => ({
           text: i.name,
           type: 'instructor',
-          count: i._count.courses
+          count: i._count.courses,
         })),
-        ...categorySuggestions.map(c => ({
+        ...categorySuggestions.map((c: { name: string; _count: { courses: number } }) => ({
           text: c.name,
           type: 'category',
-          count: c._count.courses
+          count: c._count.courses,
         })),
-        ...skillSuggestions.map(s => ({
+        ...skillSuggestions.map((s: { skill: string }) => ({
           text: s.skill,
           type: 'skill',
-          count: 1
-        }))
-      ].slice(0, limitNum)
+          count: 1,
+        })),
+      ].slice(0, limitNum);
 
       reply.send({
         success: true,
         data: {
-          suggestions
-        }
-      })
+          suggestions,
+        },
+      });
     } catch (error) {
       reply.code(500).send({
         success: false,
         error: {
           code: 'SYSTEM_001',
-          message: 'Internal server error'
-        }
-      })
+          message: 'Internal server error',
+        },
+      });
     }
-  })
+  });
 
   // async function getSearchFilters() {
   //   const [categories, levels, priceRange] = await Promise.all([
@@ -221,6 +221,6 @@ const search: FastifyPluginAsync = async (fastify): Promise<void> => {
   //     }
   //   }
   // }
-}
+};
 
-export default search
+export default search;

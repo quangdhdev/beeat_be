@@ -8,6 +8,9 @@
     },
     {
       "path": "./apps/apis"
+    },
+    {
+      "path": "./packages/shared-lib"
     }
   ]
 }

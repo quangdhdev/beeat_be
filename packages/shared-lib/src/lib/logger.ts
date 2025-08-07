@@ -1,4 +1,4 @@
-import pino from 'pino';
+const pino = require('pino');
 
 const isDevelopment = process.env.NODE_ENV !== 'production';
 
@@ -11,9 +11,9 @@ const loggerConfig = isDevelopment
         options: {
           colorize: true,
           translateTime: 'HH:MM:ss Z',
-          ignore: 'pid,hostname'
-        }
-      }
+          ignore: 'pid,hostname',
+        },
+      },
     }
   : {
       level: 'info',
@@ -39,55 +39,83 @@ export const loggers = {
   service: serviceLogger,
   database: dbLogger,
   auth: authLogger,
-  
+
   // Create a child logger with custom context
   child: (context: Record<string, any>) => logger.child(context),
-  
+
   // Log performance metrics
-  performance: (operation: string, duration: number, metadata?: Record<string, any>) => {
-    logger.info({
-      operation,
-      duration,
-      ...metadata
-    }, `Performance: ${operation} completed in ${duration}ms`);
+  performance: (
+    operation: string,
+    duration: number,
+    metadata?: Record<string, any>
+  ) => {
+    logger.info(
+      {
+        operation,
+        duration,
+        ...metadata,
+      },
+      `Performance: ${operation} completed in ${duration}ms`
+    );
   },
-  
+
   // Log database operations
-  dbOperation: (operation: string, table: string, metadata?: Record<string, any>) => {
-    dbLogger.debug({
-      operation,
-      table,
-      ...metadata
-    }, `Database: ${operation} on ${table}`);
+  dbOperation: (
+    operation: string,
+    table: string,
+    metadata?: Record<string, any>
+  ) => {
+    dbLogger.debug(
+      {
+        operation,
+        table,
+        ...metadata,
+      },
+      `Database: ${operation} on ${table}`
+    );
   },
-  
+
   // Log API calls
-  apiCall: (method: string, endpoint: string, userId?: string, metadata?: Record<string, any>) => {
-    logger.info({
-      method,
-      endpoint,
-      userId,
-      ...metadata
-    }, `API: ${method} ${endpoint}`);
+  apiCall: (
+    method: string,
+    endpoint: string,
+    userId?: string,
+    metadata?: Record<string, any>
+  ) => {
+    logger.info(
+      {
+        method,
+        endpoint,
+        userId,
+        ...metadata,
+      },
+      `API: ${method} ${endpoint}`
+    );
   },
-  
+
   // Log errors with context
   error: (error: Error, context?: Record<string, any>) => {
-    logger.error({
-      error: error.message,
-      stack: error.stack,
-      ...context
-    }, `Error: ${error.message}`);
+    logger.error(
+      {
+        error: error.message,
+        stack: error.stack,
+        ...context,
+      },
+      `Error: ${error.message}`
+    );
   },
-  
+
   // Log service errors specifically
   serviceError: (error: Error, context?: Record<string, any>) => {
-    serviceLogger.error({
-      error: error.message,
-      stack: error.stack,
-      ...context
-    }, `Service Error: ${error.message}`);
-  }
+    serviceLogger.error(
+      {
+        error: error.message,
+        stack: error.stack,
+        ...context,
+      },
+      `Service Error: ${error.message}`
+    );
+  },
 };
 
 export default logger;

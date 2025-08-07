@@ -1,9 +1,9 @@
-import { prisma } from '../lib/database'
+import { prisma } from '@beeat/shared-lib';
 
 export interface UpdateLessonProgressData {
-  completed: boolean
-  timeSpent?: number
-  watchedDuration?: number
+  completed: boolean;
+  timeSpent?: number;
+  watchedDuration?: number;
 }
 
 export class ProgressService {
@@ -12,13 +12,13 @@ export class ProgressService {
       where: {
         userId_courseId: {
           userId,
-          courseId
-        }
-      }
-    })
+          courseId,
+        },
+      },
+    });
 
     if (!enrollment) {
-      throw new Error('Not enrolled in this course')
+      throw new Error('Not enrolled in this course');
     }
 
     const course = await prisma.course.findUnique({
@@ -29,70 +29,73 @@ export class ProgressService {
             lessons: {
               include: {
                 progress: {
-                  where: { userId }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                  where: { userId },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!course) {
-      throw new Error('Course not found')
+      throw new Error('Course not found');
     }
 
-    const allLessons = course.sections.flatMap(section => section.lessons)
-    const completedLessons = allLessons.filter(lesson => 
-      lesson.progress.length > 0 && lesson.progress[0].completed
-    )
-    
-    const totalTimeSpent = allLessons.reduce((total, lesson) => 
-      total + (lesson.progress[0]?.timeSpent || 0), 0
-    )
+    const allLessons = course.sections.flatMap((section: any) => section.lessons);
+    const completedLessons = allLessons.filter(
+      (lesson: any) => lesson.progress.length > 0 && lesson.progress[0].completed
+    );
 
-    const overallProgress = allLessons.length > 0 
-      ? Math.round((completedLessons.length / allLessons.length) * 100)
-      : 0
+    const totalTimeSpent = allLessons.reduce(
+      (total: number, lesson: any) => total + (lesson.progress[0]?.timeSpent || 0),
+      0
+    );
 
-    const currentLesson = allLessons.find(lesson => 
-      !lesson.progress[0]?.completed
-    )
+    const overallProgress =
+      allLessons.length > 0
+        ? Math.round((completedLessons.length / allLessons.length) * 100)
+        : 0;
+
+    const currentLesson = allLessons.find(
+      (lesson: any) => !lesson.progress[0]?.completed
+    );
 
     const lastAccessedProgress = await prisma.lessonProgress.findFirst({
       where: { userId },
-      orderBy: { lastAccessedAt: 'desc' }
-    })
+      orderBy: { lastAccessedAt: 'desc' },
+    });
 
     return {
       progress: {
         courseId,
         userId,
         overallProgress,
-        completedLessons: completedLessons.map(lesson => lesson.id),
+        completedLessons: completedLessons.map((lesson: any) => lesson.id),
         currentLesson: currentLesson?.id || null,
         timeSpent: totalTimeSpent,
-        lastAccessedAt: lastAccessedProgress?.lastAccessedAt || enrollment.enrolledAt,
+        lastAccessedAt:
+          lastAccessedProgress?.lastAccessedAt || enrollment.enrolledAt,
         startedAt: enrollment.enrolledAt,
         completedAt: enrollment.completedAt,
         certificateEarned: enrollment.certificateEarned,
-        certificateUrl: enrollment.certificateUrl
+        certificateUrl: enrollment.certificateUrl,
       },
-      lessons: allLessons.map(lesson => ({
+      lessons: allLessons.map((lesson: any) => ({
         id: lesson.id,
         title: lesson.title,
         duration: lesson.duration,
         completed: lesson.progress[0]?.completed || false,
         completedAt: lesson.progress[0]?.completedAt || null,
-        timeSpent: lesson.progress[0]?.timeSpent || 0
-      }))
-    }
+        timeSpent: lesson.progress[0]?.timeSpent || 0,
+      })),
+    };
   }
 
   async updateLessonProgress(
-    userId: string, 
-    courseId: string, 
-    lessonId: string, 
+    userId: string,
+    courseId: string,
+    lessonId: string,
     data: UpdateLessonProgressData
   ) {
     // Verify user is enrolled in the course
@@ -100,13 +103,13 @@ export class ProgressService {
       where: {
         userId_courseId: {
           userId,
-          courseId
-        }
-      }
-    })
+          courseId,
+        },
+      },
+    });
 
     if (!enrollment) {
-      throw new Error('Not enrolled in this course')
+      throw new Error('Not enrolled in this course');
     }
 
     // Verify lesson belongs to the course
@@ -114,13 +117,13 @@ export class ProgressService {
       where: {
         id: lessonId,
         section: {
-          courseId
-        }
-      }
-    })
+          courseId,
+        },
+      },
+    });
 
     if (!lesson) {
-      throw new Error('Lesson not found in this course')
+      throw new Error('Lesson not found in this course');
     }
 
     // Update lesson progress
@@ -129,26 +132,26 @@ export class ProgressService {
       completedAt: data.completed ? new Date() : null,
       timeSpent: data.timeSpent || 0,
       watchedDuration: data.watchedDuration || 0,
-      lastAccessedAt: new Date()
-    }
+      lastAccessedAt: new Date(),
+    };
 
     const lessonProgress = await prisma.lessonProgress.upsert({
       where: {
         userId_lessonId: {
           userId,
-          lessonId
-        }
+          lessonId,
+        },
       },
       create: {
         userId,
         lessonId,
-        ...progressData
+        ...progressData,
       },
-      update: progressData
-    })
+      update: progressData,
+    });
 
     // Calculate updated course progress
-    const courseProgress = await this.calculateCourseProgress(userId, courseId)
+    const courseProgress = await this.calculateCourseProgress(userId, courseId);
 
     // Update course enrollment if course is completed
     if (courseProgress.overallProgress === 100 && !enrollment.completedAt) {
@@ -157,9 +160,9 @@ export class ProgressService {
         data: {
           completedAt: new Date(),
           certificateEarned: true,
-          certificateUrl: `https://certificates.beeat.com/course/${courseId}/user/${userId}`
-        }
-      })
+          certificateUrl: `https://certificates.beeat.com/course/${courseId}/user/${userId}`,
+        },
+      });
     }
 
     return {
@@ -168,14 +171,14 @@ export class ProgressService {
         lessonId: lessonProgress.lessonId,
         completed: lessonProgress.completed,
         completedAt: lessonProgress.completedAt,
-        timeSpent: lessonProgress.timeSpent
+        timeSpent: lessonProgress.timeSpent,
       },
       courseProgress: {
         overallProgress: courseProgress.overallProgress,
         completedLessons: courseProgress.completedLessons,
-        totalLessons: courseProgress.totalLessons
-      }
-    }
+        totalLessons: courseProgress.totalLessons,
+      },
+    };
   }
 
   private async calculateCourseProgress(userId: string, courseId: string) {
@@ -187,32 +190,33 @@ export class ProgressService {
             lessons: {
               include: {
                 progress: {
-                  where: { userId }
-                }
-              }
-            }
-          }
-        }
-      }
-    })
+                  where: { userId },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
 
     if (!course) {
-      throw new Error('Course not found')
+      throw new Error('Course not found');
     }
 
-    const allLessons = course.sections.flatMap(section => section.lessons)
-    const completedLessons = allLessons.filter(lesson => 
-      lesson.progress.length > 0 && lesson.progress[0].completed
-    )
+    const allLessons = course.sections.flatMap((section: any) => section.lessons);
+    const completedLessons = allLessons.filter(
+      (lesson: any) => lesson.progress.length > 0 && lesson.progress[0].completed
+    );
 
-    const overallProgress = allLessons.length > 0 
-      ? Math.round((completedLessons.length / allLessons.length) * 100)
-      : 0
+    const overallProgress =
+      allLessons.length > 0
+        ? Math.round((completedLessons.length / allLessons.length) * 100)
+        : 0;
 
     return {
       overallProgress,
       completedLessons: completedLessons.length,
-      totalLessons: allLessons.length
-    }
+      totalLessons: allLessons.length,
+    };
   }
 }

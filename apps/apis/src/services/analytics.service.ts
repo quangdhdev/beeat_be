@@ -1,17 +1,17 @@
-import { prisma } from '../lib/database'
+import { prisma } from '@beeat/shared-lib';
 
 export interface TrackCourseViewData {
-  courseId: string
-  source?: string
-  referrer?: string
-  ipAddress?: string
+  courseId: string;
+  source?: string;
+  referrer?: string;
+  ipAddress?: string;
 }
 
 export interface TrackLessonCompletionData {
-  courseId: string
-  lessonId: string
-  timeSpent: number
-  completionRate: number
+  courseId: string;
+  lessonId: string;
+  timeSpent: number;
+  completionRate: number;
 }
 
 export class AnalyticsService {
@@ -22,24 +22,27 @@ export class AnalyticsService {
         userId,
         source: data.source,
         referrer: data.referrer,
-        ipAddress: data.ipAddress
-      }
-    })
+        ipAddress: data.ipAddress,
+      },
+    });
 
     return {
-      message: 'Course view tracked successfully'
-    }
+      message: 'Course view tracked successfully',
+    };
   }
 
-  async trackLessonCompletion(_userId: string, _data: TrackLessonCompletionData) {
+  async trackLessonCompletion(
+    _userId: string,
+    _data: TrackLessonCompletionData
+  ) {
     // This is primarily for analytics tracking, separate from progress tracking
     // You could store this in a separate analytics table or use an external analytics service
-    
+
     // For now, we'll just return success since the actual lesson completion
     // is handled by the progress service
     return {
-      message: 'Lesson completion tracked successfully'
-    }
+      message: 'Lesson completion tracked successfully',
+    };
   }
 
   async getLearningAnalytics(userId: string, period = 'month') {
@@ -56,15 +59,15 @@ export class AnalyticsService {
                     lessons: {
                       include: {
                         progress: {
-                          where: { userId }
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
+                          where: { userId },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
         progress: {
           include: {
@@ -74,103 +77,136 @@ export class AnalyticsService {
                   include: {
                     course: {
                       include: {
-                        category: true
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
+                        category: true,
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
-        analytics: true
-      }
-    })
+        analytics: true,
+      },
+    });
 
     if (!user) {
-      throw new Error('User not found')
+      throw new Error('User not found');
     }
 
     // Calculate analytics
-    const totalTimeSpent = user.progress.reduce((sum, p) => sum + p.timeSpent, 0)
-    const completedLessons = user.progress.filter(p => p.completed).length
-    const coursesCompleted = user.enrollments.filter(e => e.completedAt).length
-    const certificatesEarned = user.enrollments.filter(e => e.certificateEarned).length
+    const totalTimeSpent = user.progress.reduce(
+      (sum: number, p: any) => sum + p.timeSpent,
+      0
+    );
+    const completedLessons = user.progress.filter((p: any) => p.completed).length;
+    const coursesCompleted = user.enrollments.filter(
+      (e: any) => e.completedAt
+    ).length;
+    const certificatesEarned = user.enrollments.filter(
+      (e: any) => e.certificateEarned
+    ).length;
 
     // Calculate progress by category
-    const categoryProgress = user.enrollments.reduce((acc, enrollment) => {
-      const category = enrollment.course.category.name
+    const categoryProgress = user.enrollments.reduce((acc: any, enrollment: any) => {
+      const category = enrollment.course.category.name;
 
       if (!acc[category]) {
         acc[category] = {
           category,
           coursesEnrolled: 0,
           coursesCompleted: 0,
-          timeSpent: 0
-        }
+          timeSpent: 0,
+        };
       }
 
-      acc[category].coursesEnrolled++
+      acc[category].coursesEnrolled++;
       if (enrollment.completedAt) {
-        acc[category].coursesCompleted++
+        acc[category].coursesCompleted++;
       }
 
       // Calculate time spent in this category
-      const categoryTimeSpent = enrollment.course.sections.reduce((total, section) =>
-        total + section.lessons.reduce((sectionTotal, lesson) =>
-          sectionTotal + (lesson.progress[0]?.timeSpent || 0), 0
-        ), 0
-      )
-      
-      acc[category].timeSpent += categoryTimeSpent
+      const categoryTimeSpent = enrollment.course.sections.reduce(
+        (total: number, section: any) =>
+          total +
+          section.lessons.reduce(
+            (sectionTotal: number, lesson: any) =>
+              sectionTotal + (lesson.progress[0]?.timeSpent || 0),
+            0
+          ),
+        0
+      );
 
-      return acc
-    }, {} as Record<string, any>)
+      acc[category].timeSpent += categoryTimeSpent;
+
+      return acc;
+    }, {} as Record<string, any>);
 
     // Recent activity
     const recentActivity = user.progress
-      .filter(p => p.completedAt)
-      .sort((a, b) => new Date(b.completedAt as Date).getTime() - new Date(a.completedAt as Date).getTime())
+      .filter((p: any) => p.completedAt)
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.completedAt as Date).getTime() -
+          new Date(a.completedAt as Date).getTime()
+      )
       .slice(0, 10)
-      .map(p => ({
+      .map((p: any) => ({
         type: 'lesson_completed',
         courseTitle: p.lesson.section.course.title,
         lessonTitle: p.lesson.title,
-        timestamp: p.completedAt
-      }))
+        timestamp: p.completedAt,
+      }));
 
     // Add enrollment events
     const enrollmentActivity = user.enrollments
-      .sort((a, b) => new Date(b.enrolledAt).getTime() - new Date(a.enrolledAt).getTime())
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.enrolledAt).getTime() - new Date(a.enrolledAt).getTime()
+      )
       .slice(0, 5)
-      .map(e => ({
+      .map((e: any) => ({
         type: 'course_enrolled',
         courseTitle: e.course.title,
         lessonTitle: null,
-        timestamp: e.enrolledAt
-      }))
+        timestamp: e.enrolledAt,
+      }));
 
     // Add certificate events
     const certificateActivity = user.enrollments
-      .filter(e => e.certificateEarned && e.completedAt)
-      .sort((a, b) => new Date(b.completedAt as Date).getTime() - new Date(a.completedAt as Date).getTime())
+      .filter((e: any) => e.certificateEarned && e.completedAt)
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.completedAt as Date).getTime() -
+          new Date(a.completedAt as Date).getTime()
+      )
       .slice(0, 5)
-      .map(e => ({
+      .map((e: any) => ({
         type: 'certificate_earned',
         courseTitle: e.course.title,
         lessonTitle: null,
-        timestamp: e.completedAt
-      }))
+        timestamp: e.completedAt,
+      }));
 
-    const allActivity = [...recentActivity, ...enrollmentActivity, ...certificateActivity]
-      .sort((a, b) => new Date(b.timestamp as Date).getTime() - new Date(a.timestamp as Date).getTime())
-      .slice(0, 15)
+    const allActivity = [
+      ...recentActivity,
+      ...enrollmentActivity,
+      ...certificateActivity,
+    ]
+      .sort(
+        (a: any, b: any) =>
+          new Date(b.timestamp as Date).getTime() -
+          new Date(a.timestamp as Date).getTime()
+      )
+      .slice(0, 15);
 
     // Calculate streaks (simplified - would need more complex logic for real streaks)
-    const currentStreak = this.calculateCurrentStreak(user.progress)
-    const longestStreak = this.calculateLongestStreak(user.progress)
+    const currentStreak = this.calculateCurrentStreak(user.progress);
+    const longestStreak = this.calculateLongestStreak(user.progress);
 
-    const userAnalytics = (user.analytics && Array.isArray(user.analytics) ? user.analytics[0] : null) || {
+    const userAnalytics = (user.analytics && Array.isArray(user.analytics)
+      ? user.analytics[0]
+      : null) || {
       totalTimeSpent: 0,
       coursesCompleted: 0,
       lessonsCompleted: 0,
@@ -178,8 +214,8 @@ export class AnalyticsService {
       currentStreak: 0,
       longestStreak: 0,
       dailyGoalMinutes: 30,
-      weeklyGoalMinutes: 210
-    }
+      weeklyGoalMinutes: 210,
+    };
 
     return {
       analytics: {
@@ -189,58 +225,65 @@ export class AnalyticsService {
         certificatesEarned,
         currentStreak,
         longestStreak,
-        averageSessionTime: completedLessons > 0 ? Math.round(totalTimeSpent / completedLessons) : 0,
+        averageSessionTime:
+          completedLessons > 0
+            ? Math.round(totalTimeSpent / completedLessons)
+            : 0,
         learningGoals: {
           daily: userAnalytics.dailyGoalMinutes * 60, // Convert to seconds
           weekly: userAnalytics.weeklyGoalMinutes * 60,
-          achieved: false // Would need to calculate based on recent activity
+          achieved: false, // Would need to calculate based on recent activity
         },
         progressByCategory: Object.values(categoryProgress),
-        recentActivity: allActivity
-      }
-    }
+        recentActivity: allActivity,
+      },
+    };
   }
 
   private calculateCurrentStreak(progress: any[]): number {
     // Simplified streak calculation
     // In a real implementation, you'd calculate consecutive days of activity
-    const completedProgress = progress.filter(p => p.completed && p.completedAt)
-    const recentDays = this.getRecentDays(7)
-    
-    let streak = 0
+    const completedProgress = progress.filter(
+      (p: any) => p.completed && p.completedAt
+    );
+    const recentDays = this.getRecentDays(7);
+
+    let streak = 0;
     for (const day of recentDays) {
-      const hasActivity = completedProgress.some(p => 
+      const hasActivity = completedProgress.some((p: any) =>
         this.isSameDay(new Date(p.completedAt), day)
-      )
+      );
       if (hasActivity) {
-        streak++
+        streak++;
       } else {
-        break
+        break;
       }
     }
-    
-    return streak
+
+    return streak;
   }
 
   private calculateLongestStreak(progress: any[]): number {
     // Simplified longest streak calculation
     // This would need a more sophisticated implementation
-    return this.calculateCurrentStreak(progress)
+    return this.calculateCurrentStreak(progress);
   }
 
   private getRecentDays(count: number): Date[] {
-    const days = []
+    const days = [];
     for (let i = 0; i < count; i++) {
-      const date = new Date()
-      date.setDate(date.getDate() - i)
-      days.push(date)
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      days.push(date);
     }
-    return days
+    return days;
   }
 
   private isSameDay(date1: Date, date2: Date): boolean {
-    return date1.getFullYear() === date2.getFullYear() &&
-           date1.getMonth() === date2.getMonth() &&
-           date1.getDate() === date2.getDate()
+    return (
+      date1.getFullYear() === date2.getFullYear() &&
+      date1.getMonth() === date2.getMonth() &&
+      date1.getDate() === date2.getDate()
+    );
   }
 }

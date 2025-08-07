@@ -1,5 +1,5 @@
-import { prisma } from '../lib/database'
-import { Prisma } from '../generated/prisma'
+import { prisma } from '@beeat/shared-lib';
+import { Prisma } from '../generated/prisma';
 
 export class CartService {
   async getCartItems(userId: string) {
@@ -8,21 +8,26 @@ export class CartService {
       include: {
         course: {
           include: {
-            instructor: true
-          }
-        }
+            instructor: true,
+          },
+        },
       },
-      orderBy: { addedAt: 'desc' }
-    })
+      orderBy: { addedAt: 'desc' },
+    });
 
-    const subtotal = items.reduce((sum, item) => sum + (item.course.price * item.quantity), 0)
-    const totalOriginalPrice = items.reduce((sum, item) => 
-      sum + ((item.course.originalPrice || item.course.price) * item.quantity), 0
-    )
-    const totalSavings = totalOriginalPrice - subtotal
+    const subtotal = items.reduce(
+      (sum: number, item: any) => sum + item.course.price * item.quantity,
+      0
+    );
+    const totalOriginalPrice = items.reduce(
+      (sum: number, item: any) =>
+        sum + (item.course.originalPrice || item.course.price) * item.quantity,
+      0
+    );
+    const totalSavings = totalOriginalPrice - subtotal;
 
     return {
-      items: items.map(item => ({
+      items: items.map((item: any) => ({
         id: item.id,
         courseId: item.courseId,
         course: {
@@ -31,19 +36,19 @@ export class CartService {
           instructor: item.course.instructor.name,
           thumbnail: item.course.thumbnail,
           price: item.course.price,
-          originalPrice: item.course.originalPrice
+          originalPrice: item.course.originalPrice,
         },
         quantity: item.quantity,
-        addedAt: item.addedAt
+        addedAt: item.addedAt,
       })),
       summary: {
         totalItems: items.length,
         subtotal,
         totalOriginalPrice,
         totalSavings,
-        total: subtotal
-      }
-    }
+        total: subtotal,
+      },
+    };
   }
 
   async addToCart(userId: string, courseId: string, quantity = 1) {
@@ -52,9 +57,9 @@ export class CartService {
         data: {
           userId,
           courseId,
-          quantity
-        }
-      })
+          quantity,
+        },
+      });
 
       return {
         message: 'Course added to cart successfully',
@@ -62,30 +67,34 @@ export class CartService {
           id: cartItem.id,
           courseId: cartItem.courseId,
           quantity: cartItem.quantity,
-          addedAt: cartItem.addedAt
-        }
-      }
+          addedAt: cartItem.addedAt,
+        },
+      };
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
-          throw new Error('Course already in cart')
+          throw new Error('Course already in cart');
         }
       }
-      throw error
+      throw error;
     }
   }
 
-  async updateCartItemQuantity(userId: string, itemId: string, quantity: number) {
+  async updateCartItemQuantity(
+    userId: string,
+    itemId: string,
+    quantity: number
+  ) {
     const cartItem = await prisma.cartItem.updateMany({
       where: {
         id: itemId,
-        userId
+        userId,
       },
-      data: { quantity }
-    })
+      data: { quantity },
+    });
 
     if (cartItem.count === 0) {
-      throw new Error('Cart item not found')
+      throw new Error('Cart item not found');
     }
 
     return {
@@ -93,35 +102,35 @@ export class CartService {
       cartItem: {
         id: itemId,
         quantity,
-        updatedAt: new Date()
-      }
-    }
+        updatedAt: new Date(),
+      },
+    };
   }
 
   async removeFromCart(userId: string, itemId: string) {
     const result = await prisma.cartItem.deleteMany({
       where: {
         id: itemId,
-        userId
-      }
-    })
+        userId,
+      },
+    });
 
     if (result.count === 0) {
-      throw new Error('Cart item not found')
+      throw new Error('Cart item not found');
     }
 
     return {
-      message: 'Item removed from cart successfully'
-    }
+      message: 'Item removed from cart successfully',
+    };
   }
 
   async clearCart(userId: string) {
     await prisma.cartItem.deleteMany({
-      where: { userId }
-    })
+      where: { userId },
+    });
 
     return {
-      message: 'Cart cleared successfully'
-    }
+      message: 'Cart cleared successfully',
+    };
   }
 }
