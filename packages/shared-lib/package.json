@@ -29,10 +29,17 @@
           "format": [
             "esm"
           ],
-          "declarationRootDir": "packages/shared-lib/src"
+          "declarationRootDir": "packages/shared-lib/src",
+          "external": ["@supabase/supabase-js", "@prisma/client", "pino", "zod"],
+          "platform": "node"
         }
       }
     }
   },
-  "dependencies": {}
+  "dependencies": {
+    "@supabase/supabase-js": "^2.53.0",
+    "@prisma/client": "^6.13.0",
+    "pino": "^9.7.0",
+    "zod": "^4.0.15"
+  }
 }

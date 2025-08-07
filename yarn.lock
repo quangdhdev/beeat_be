@@ -1205,6 +1205,14 @@
   resolved "https://registry.npmjs.org/@fastify/autoload/-/autoload-6.0.3.tgz"
   integrity sha512-/wM2pmI7jP2fGah3YuP14i9vuaijpD4gQYLiyd+eD7gUxpA3B4R6/0QIXQS2eJaYD9aIX4ZFRzPmrZsaetfcWw==
 
+"@fastify/cors@^11.1.0":
+  version "11.1.0"
+  resolved "https://registry.npmjs.org/@fastify/cors/-/cors-11.1.0.tgz"
+  integrity sha512-sUw8ed8wP2SouWZTIbA7V2OQtMNpLj2W6qJOYhNdcmINTu6gsxVYXjQiM9mdi8UUDlcoDDJ/W2syPo1WB2QjYA==
+  dependencies:
+    fastify-plugin "^5.0.0"
+    toad-cache "^3.7.0"
+
 "@fastify/error@^4.0.0", "@fastify/error@^4.2.0":
   version "4.2.0"
   resolved "https://registry.npmjs.org/@fastify/error/-/error-4.2.0.tgz"
