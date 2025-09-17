@@ -19,7 +19,11 @@ export const Login: React.FC = () => {
     setError('');
     
     try {
-      await login(email, password, twoFactorCode);
+      const { error } = await login(email, password, twoFactorCode);
+      if (error) {
+        setError(error.message || t('auth.invalidCredentials'));
+      } else {
+      }
     } catch (err) {
       setError(t('auth.invalidCredentials'));
     }
